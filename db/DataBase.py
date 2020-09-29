@@ -2,20 +2,21 @@
 #@Time : 2020/9/3 0003 10:49
 #@Author: Joword
 #@File : Database.py
-#@Update: 2020/9/24
+#@Update: 2020/9/28
 
 
 class Database(object):
 
 	def __init__(self, host:str, user:str, passwd:str, database:str):
 		u'''
-		:param host:数据库IP
-		:param user:数据库登陆用户名
-		:param passwd:数据库登录密码
-		:param database:数据库名字
-		:param port:数据库端口,默认是3306，需要提前进行修改
-		默认支持Mysql，若要SQLite/NoSQL等其他数据库需要重写
-		:test Database(host="172.16.56.113",user="vardecoder",passwd="Decoder#123",database="varDecoding")
+		:param host: Internetworking Protocol address in database
+		:param user: User name in database
+		:param passwd: Password in database
+		:param database: the name of database
+		:param port: The protocol port of database, the default was 3306, it can be changed if need.
+		The database default was MySQL, if you want others, you could change the arguments.
+		:e.g: Database(host="172.16.56.113",user="vardecoder",passwd="Decoder#123",database="varDecoding")
+		:e.g: Database(host=IP address,user=user_name,passwd=password,database=database_name)
 		'''
 		self.host = host
 		self.user = user
@@ -29,6 +30,10 @@ class Database(object):
 		return self.__port
 	
 	def set_port(self,port):
+		u'''
+		:param port: new port
+		:return: to change the value of port
+		'''
 		self.__port = port
 		print(self.__port)
 	
@@ -105,7 +110,6 @@ class Database(object):
 		'''
 		return "SELECT {} FROM {} LEFT JOIN {} ON {} WHERE {}".format(columns,table_name_from,table_name_join,conditions_on,conditions_where)
 	
-	@property
 	def _crud_word(self,sql:str)->str:
 		u'''使用正则表达式判断是进行了什么CRUD数据库操作
 		:param sql: sql语句
@@ -123,7 +127,12 @@ class Database(object):
 		
 	def connect(self, sql:str):
 		u'''直接连接数据库，不通过其他通道连接数据库
-		模式：select为SELECT，update为UPDATE，delete为DELETE，insert为INSERT，select merge为SELECT * FROM table_name LEFT JOIN * SET conditions WHERE conditions
+		模式：
+		select为SELECT * FROM table_name / SELECT * FROM table_name WHERE conditions
+		update为UPDATE
+		delete为DELETE
+		insert为INSERT
+		select merge为SELECT * FROM table_name LEFT JOIN * SET conditions WHERE conditions
 		:param sql:进行不同的CRUD操作
 		:return:返回序列化数据，根据arg选择要对数据进行对应的操作
 		'''
@@ -131,14 +140,22 @@ class Database(object):
 			import mysql.connector as mc
 		except ImportError:
 			raise ImportError("Database.py need mysql.connect, Please manually install the modules about that.")
-		self.model = self._crud_word
+		self.model = self._crud_word(sql)
 		connect = mc.connect(host=self.host, user=self.user, passwd=self.passwd, database=self.database)
 		cursor = connect.cursor()
 		cursor.execute(sql)
 		result = cursor.fetchall()
 		return result
 		
-	def _ssh_connect(self, ssh_ip:tuple, ssh_username:str, ssh_password:str, bind_address:tuple):
+	def _ssh_connect(self, sql:str,ssh_ip:tuple, ssh_username:str, ssh_password:str, bind_address:tuple) -> list:
+		u'''使用ssh通道连接数据库
+		:param sql:
+		:param ssh_ip:
+		:param ssh_username:
+		:param ssh_password:
+		:param bind_address:
+		:return:
+		'''
 		try:
 			from sshtunnel import SSHTunnelForwarder
 		except ImportError:
@@ -152,12 +169,12 @@ class Database(object):
 			with SSHTunnelForwarder(ssh_ip, ssh_username=ssh_username, ssh_password=ssh_password, remote_bind_address=bind_address) as server:
 				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
 				cursor = connect.cursor()
-				cursor.execute("SELECT * FROM user_collect")
+				cursor.execute(sql)
 				result = cursor.fetchall()
-				print(result)
-
-# if __name__ == '__main__':
-# 	test = Database(host="172.16.56.113",user="vardecoder",passwd="Decoder#123",database="varDecoding")
-# 	sql = test.to_select("*","user_collect")
-# 	test.connect(sql)
-		
+				return result
+		else:
+			connect = mc.connect(host=self.host, user=self.user, passwd=self.passwd, database=self.database)
+			cursor = connect.cursor()
+			cursor.execute(sql)
+			result = cursor.fetchall()
+			return result

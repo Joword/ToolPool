@@ -7,3 +7,12 @@ to excel the List from python by openpyxl
 # Merge.py
 to merge two tables with the same index
 
+#db
+>the function of file folder was connected database by mysql.connector.<br>
+Besides, it has been sshtunel to connect your database at all.<br>
+**The DataBase.py was the tool of connecting your wanted database.**<br>
+Anyway, I want to enrich database connection in future.
+
+#analysis
+>it was the folder of handling the data from the folder of db.<br>
+it has three examples when I caught the demand from others in the past.
