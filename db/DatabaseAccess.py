@@ -1,11 +1,11 @@
 # -*- coding:utf-8 -*-
 #@Time : 2020/9/3 0003 10:49
 #@Author: Joword
-#@File : Database.py
+#@File : DatabaseAccess.py
 #@Update: 2020/9/28
 
 
-class Database(object):
+class DatabaseAccess(object):
 
 	def __init__(self, host:str, user:str, passwd:str, database:str):
 		u'''
@@ -38,10 +38,10 @@ class Database(object):
 		print(self.__port)
 	
 	def __getattr__(self, item):
-		return getattr(Database,item) if item in [self.host, self.user, self.passwd, self.database] else "Can not find the attribute."
+		return getattr(DatabaseAccess,item) if item in [self.host, self.user, self.passwd, self.database] else "Can not find the attribute."
 	
 	def __setattr__(self, key, value):
-		return setattr(Database, key, value)
+		return setattr(DatabaseAccess, key, value)
 	
 	def __delattr__(self, item):
 		pass
