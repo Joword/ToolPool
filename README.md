@@ -10,8 +10,9 @@ to merge two tables with the same index
 db
 >the function of file folder was connected database by mysql.connector.<br>
 Besides, it has been sshtunel to connect your database at all.<br>
-**The DataBase.py was the tool of connecting your wanted database.**<br>
-Anyway, I want to enrich database connection in future.
+**The DatabaseAccess.py was the tool of connecting your wanted database.**<br>
+Anyway, I want to enrich database connection in future.<br>
+**The HandleDatabase.py was a tool of handle the database by SSH connecting**<br>
 
 analysis
 >it was the folder of handling the data from the folder of db.<br>
