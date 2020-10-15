@@ -7,7 +7,10 @@
 import re
 import datetime
 import pandas as pd
+import openpyxl as ol
 import mysql.connector as mc
+from WriterExcel import *
+from collections import Counter
 from sshtunnel import SSHTunnelForwarder
 from db.DatabaseAccess import DatabaseAccess
 
@@ -149,21 +152,80 @@ class HandleDatabase(DatabaseAccess):
 			finally:
 				connect.close()
 	
+	@property
+	def select_group_users(self):
+		#TODO:新函数
+		groupName = 'ClinicalGroup'
+		groupId,group_leader,group_member,informations,user_collect = int(),int(),list(),list(),list()
+		with SSHTunnelForwarder(("192.168.29.37",22), ssh_username='vardecoder', ssh_password='VarDecoder',remote_bind_address=('0.0.0.0',3306)) as server:
+			try:
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				cursor = connect.cursor()
+				
+				groupIdSQL = "SELECT * FROM `group` WHERE group_name = "+"'"+groupName+"'"
+				cursor.execute(groupIdSQL)
+				group_data = cursor.fetchall()
+				groupId = group_data[0][0]
+				
+				cursor.execute("SELECT * FROM user_collect WHERE user_id={} OR user_id={} OR user_id ={} OR user_id={} OR user_id={} OR user_id={}".format(int(14),int(19),int(21),int(22),int(29),int(30)))
+				user_collect = cursor.fetchall()
+				
+				cursor.execute("SELECT * FROM group_user WHERE group_id = {}".format(int(groupId)))
+				group_member = cursor.fetchall()
+				for i in group_member:
+					information = dict()
+					cursor.execute("SELECT * FROM sys_user WHERE user_id ={}".format(int(i[1])))
+					user_name = cursor.fetchall()
+					information['groupId'] = i[0]
+					information['userId'] = i[1]
+					information['name'] = str(user_name[0][2].decode('utf-8')).upper() + " " + str(user_name[0][1].decode('utf-8')).upper()
+					informations.append(information)
+				
+			except:
+				connect.rollback()
+			finally:
+				connect.close()
+				return informations,user_collect
+		
+	
 	def main(self):
+		#TODO:新增新函数需重写
 		u'''主程序入口，
 		:return:
 		'''
-		# index数据获取
-		results = self.select_database_data("user_collect",self.get_index("50 discrepant variants.xlsx"))
-		# 数据处理
-		data_new = self.make_data(results)
-		# 数据修改
-		for table in ['user_pm3bp2','user_pp1bs4','user_pp4bp5','user_ps2pm6','user_ps3bs3','user_ps4']:
-			datas = self.select_database_data(table,data_new[0])
-			if len(datas['data']) > 0:
-				self.insert_to_tables(table_name="test",data=datas)
+		# # index数据获取
+		# results = self.select_database_data("user_collect",self.get_index("50 discrepant variants.xlsx"))
+		# # 数据处理
+		# data_new = self.make_data(results)
+		# # 数据修改
+		# for table in ['user_pm3bp2','user_pp1bs4','user_pp4bp5','user_ps2pm6','user_ps3bs3','user_ps4']:
+		# 	datas = self.select_database_data(table,data_new[0])
+		# 	if len(datas['data']) > 0:
+		# 		self.insert_to_tables(table_name="test",data=datas)
+		
+		information = dict()
+		informations, user_collect = self.select_group_users[0],self.select_group_users[1]
+		gene_list = [content[3] for content in user_collect]
+		gene_list_counter = dict(Counter(gene_list))
+		variant_list = [content[2] for content in user_collect]
+		mix_compare = [content[3] + "|" + content[2] for content in user_collect]
+		gene_variant = [{gene: ",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)]),"SUM": len([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)])} for gene in gene_list_counter]
+		
+		# for i in informations:
+		# 	gene_list = [content[3] for content in user_collect if int(i['userId']) == int(content[1])]
+		# 	gene_list_dict = dict(Counter(gene_list))
+		# 	variant_list =[content[2] for content in user_collect if int(i['userId']) == int(content[1])]
+		# 	mix_compare = [content[3]+"|"+content[2] for content in user_collect if int(i['userId']) == int(content[1])]
+		# 	gene_variant = [{gene:",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)]),"SUM":len([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)])} for gene in gene_list_dict]
+		# 	information[i['name']] = gene_variant
+			
+		with open("test.tsv","w+") as file:
+			file.write("Gene"+"\t"+"Sum"+"\n")
+			for variant in gene_variant:
+				file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
+			
 
-# if __name__ == '__main__':
-# 	test = HandleDatabase(host='192.168.29.37',user='vardecoder',passwd='Decoder#123',database='varDecoding')
-# 	test.main()
+if __name__ == '__main__':
+	test = HandleDatabase(host='192.168.29.37',user='vardecoder',passwd='Decoder#123',database='varDecoding')
+	test.main()
 	
