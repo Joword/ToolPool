@@ -154,8 +154,8 @@ class HandleDatabase(DatabaseAccess):
 	
 	@property
 	def select_group_users(self):
-		#TODO:新函数
 		groupName = 'ClinicalGroup'
+		
 		groupId,group_leader,group_member,informations,user_collect = int(),int(),list(),list(),list()
 		with SSHTunnelForwarder(("192.168.29.37",22), ssh_username='vardecoder', ssh_password='VarDecoder',remote_bind_address=('0.0.0.0',3306)) as server:
 			try:
@@ -167,20 +167,19 @@ class HandleDatabase(DatabaseAccess):
 				group_data = cursor.fetchall()
 				groupId = group_data[0][0]
 				
-				cursor.execute("SELECT * FROM user_collect WHERE user_id={} OR user_id={} OR user_id ={} OR user_id={} OR user_id={} OR user_id={}".format(int(14),int(19),int(21),int(22),int(29),int(30)))
+				cursor.execute("SELECT * FROM user_collect WHERE user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={}".format(int(14),int(19),int(21),int(22),int(29),int(30)))
 				user_collect = cursor.fetchall()
 				
-				cursor.execute("SELECT * FROM group_user WHERE group_id = {}".format(int(groupId)))
+				cursor.execute("SELECT * FROM group_user WHERE group_id={}".format(int(groupId)))
 				group_member = cursor.fetchall()
 				for i in group_member:
 					information = dict()
-					cursor.execute("SELECT * FROM sys_user WHERE user_id ={}".format(int(i[1])))
+					cursor.execute("SELECT * FROM sys_user WHERE user_id={}".format(int(i[1])))
 					user_name = cursor.fetchall()
 					information['groupId'] = i[0]
 					information['userId'] = i[1]
 					information['name'] = str(user_name[0][2].decode('utf-8')).upper() + " " + str(user_name[0][1].decode('utf-8')).upper()
 					informations.append(information)
-				
 			except:
 				connect.rollback()
 			finally:
@@ -190,7 +189,7 @@ class HandleDatabase(DatabaseAccess):
 	
 	def main(self):
 		#TODO:新增新函数需重写
-		u'''主程序入口，
+		u'''主程序入口
 		:return:
 		'''
 		# # index数据获取
@@ -203,6 +202,9 @@ class HandleDatabase(DatabaseAccess):
 		# 	if len(datas['data']) > 0:
 		# 		self.insert_to_tables(table_name="test",data=datas)
 		
+		u'''
+		将user_collect表里所有的gene不分submitter地统计出总数
+		'''
 		information = dict()
 		informations, user_collect = self.select_group_users[0],self.select_group_users[1]
 		gene_list = [content[3] for content in user_collect]
@@ -211,6 +213,9 @@ class HandleDatabase(DatabaseAccess):
 		mix_compare = [content[3] + "|" + content[2] for content in user_collect]
 		gene_variant = [{gene: ",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)]),"SUM": len([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)])} for gene in gene_list_counter]
 		
+		u'''
+		将user_collect的基因按照submitter统计出总数与variantId
+		'''
 		# for i in informations:
 		# 	gene_list = [content[3] for content in user_collect if int(i['userId']) == int(content[1])]
 		# 	gene_list_dict = dict(Counter(gene_list))
@@ -219,13 +224,14 @@ class HandleDatabase(DatabaseAccess):
 		# 	gene_variant = [{gene:",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)]),"SUM":len([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)])} for gene in gene_list_dict]
 		# 	information[i['name']] = gene_variant
 			
-		with open("test.tsv","w+") as file:
-			file.write("Gene"+"\t"+"Sum"+"\n")
-			for variant in gene_variant:
-				file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
+		# with open("test.tsv","w+") as file:
+		# 	# 输出文件
+		# 	file.write("Gene"+"\t"+"Sum"+"\n")
+		# 	for variant in gene_variant:
+		# 		file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
 			
 
-if __name__ == '__main__':
-	test = HandleDatabase(host='192.168.29.37',user='vardecoder',passwd='Decoder#123',database='varDecoding')
-	test.main()
+# if __name__ == '__main__':
+# 	test = HandleDatabase(host='192.168.29.37',user='vardecoder',passwd='Decoder#123',database='varDecoding')
+# 	test.main()
 	
