@@ -186,7 +186,40 @@ class HandleDatabase(DatabaseAccess):
 				connect.close()
 				return informations,user_collect
 		
-	
+	def select_user_collect(self, table:str) -> list:
+		u'''统计出ClinicalGroup成员中致病性强度总数
+		:param table:数据库表名
+		:return: select所得结果
+		'''
+		results= []
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder', remote_bind_address=('0.0.0.0', 3306)) as server:
+			try:
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				cursor = connect.cursor()
+				cursor.execute("SELECT * FROM {} WHERE (user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={})".format(str(table),int(14),int(19),int(21),int(22),int(29),int(30)))
+				user_collect = cursor.fetchall()
+				results = user_collect
+			except:
+				connect.rollback()
+			finally:
+				connect.close()
+				return results
+			
+	def user_collect_index(self, result):
+		#TODO:2020年10月19日新需求，统计处致病性强度在ClinicalGroup里各个总数
+		user_collect_list, list1, list2 = list(),list(),list()
+		user_collect_counter = dict(Counter([i[2] for i in result]))
+		user_collect1 = {i:user_collect_counter[i] for i in user_collect_counter if user_collect_counter[i] == 1}
+		user_collect_morethan1 = {i:user_collect_counter[i] for i in user_collect_counter if user_collect_counter[i] > 1}
+		print('only 1: '+str(len(user_collect1)),' more than 1:'+str(len(user_collect_morethan1)))
+		for variantId in user_collect_morethan1:
+			list1.append([i for i in result if i[2] == variantId and str(i[-2]) == max([str(i[-2]) for i in result if i[2] == variantId])][0])
+		for variant in user_collect1:
+			list2.append([i for i in result if i[2] == variant][0])
+		user_collect_list = list1 + list2
+		user_collect_interpretation = [i[7] for i in user_collect_list]
+		print(dict(Counter(user_collect_interpretation)))
+		
 	def main(self):
 		#TODO:新增新函数需重写
 		u'''主程序入口
@@ -202,20 +235,20 @@ class HandleDatabase(DatabaseAccess):
 		# 	if len(datas['data']) > 0:
 		# 		self.insert_to_tables(table_name="test",data=datas)
 		
-		u'''
-		将user_collect表里所有的gene不分submitter地统计出总数
-		'''
-		information = dict()
-		informations, user_collect = self.select_group_users[0],self.select_group_users[1]
-		gene_list = [content[3] for content in user_collect]
-		gene_list_counter = dict(Counter(gene_list))
-		variant_list = [content[2] for content in user_collect]
-		mix_compare = [content[3] + "|" + content[2] for content in user_collect]
-		gene_variant = [{gene: ",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)]),"SUM": len([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)])} for gene in gene_list_counter]
-		
-		u'''
-		将user_collect的基因按照submitter统计出总数与variantId
-		'''
+		# u'''
+# 		# 将user_collect表里所有的gene不分submitter地统计出总数
+# 		# '''
+# 		# information = dict()
+# 		# informations, user_collect = self.select_group_users[0],self.select_group_users[1]
+# 		# gene_list = [content[3] for content in user_collect]
+# 		# gene_list_counter = dict(Counter(gene_list))
+# 		# variant_list = [content[2] for content in user_collect]
+# 		# mix_compare = [content[3] + "|" + content[2] for content in user_collect]
+# 		# gene_variant = [{gene: ",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)]),"SUM": len([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)])} for gene in gene_list_counter]
+# 		#
+# 		# u'''
+# 		# 将user_collect的基因按照submitter统计出总数与variantId
+# 		# '''
 		# for i in informations:
 		# 	gene_list = [content[3] for content in user_collect if int(i['userId']) == int(content[1])]
 		# 	gene_list_dict = dict(Counter(gene_list))
@@ -229,6 +262,11 @@ class HandleDatabase(DatabaseAccess):
 		# 	file.write("Gene"+"\t"+"Sum"+"\n")
 		# 	for variant in gene_variant:
 		# 		file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
+		
+		#2020年10月19日
+		user_collect = self.select_user_collect("user_collect")
+		self.user_collect_index(user_collect)
+		
 			
 
 # if __name__ == '__main__':
