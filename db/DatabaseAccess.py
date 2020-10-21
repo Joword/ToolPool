@@ -60,9 +60,9 @@ class DatabaseAccess(object):
 		:return:可能会有合并的情况和union搜索的存在，可能需要rewrite
 		'''
 		if conditions is None:
-			return "SELECT {} FROM {}".format(columns,table_name)
+			return "SELECT {} FROM {}".format(str(columns),str(table_name))
 		else:
-			return "SELECT {} FROM {} WHERE {}".format(columns,table_name,conditions)
+			return "SELECT {} FROM {} WHERE {}".format(str(columns),str(table_name),str(conditions))
 	
 	def to_delete(self, table_name:str, column=None, value=None) -> str:
 		u'''
