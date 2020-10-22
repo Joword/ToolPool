@@ -1,8 +1,8 @@
 # -*- coding:utf-8 -*-
-#@Time : 2020/10/10 0010 10:14
-#@Author: Joword
-#@File : HandleDatabase.py
-#@Update : Joword 2020/10/13 10:06
+# @Time : 2020/10/10 0010 10:14
+# @Author: Joword
+# @File : HandleDatabase.py
+# @Update : Joword 2020/10/13 10:06
 
 import re
 import datetime
@@ -14,9 +14,10 @@ from collections import Counter
 from sshtunnel import SSHTunnelForwarder
 from db.DatabaseAccess import DatabaseAccess
 
+
 class HandleDatabase(DatabaseAccess):
 	
-	def get_index(self, fileName:str) -> list:
+	def get_index(self, fileName: str) -> list:
 		u'''获取variantId
 		:param fileName:文件名
 		:return:variantId list
@@ -24,15 +25,15 @@ class HandleDatabase(DatabaseAccess):
 		df1 = pd.read_excel(fileName, index_col=0)
 		return list(set(df1.index))
 	
-	def get_header(self, table_description:list)->list:
+	def get_header(self, table_description: list) -> list:
 		return [i[0] for i in table_description]
 	
-	def make_data(self, input_data:dict)->tuple:
+	def make_data(self, input_data: dict) -> tuple:
 		u'''主要做数据修改
 		:param input_data: SELECT得到的数据
 		:return: 元组(未修改的字典型列表，已修改的字典型列表)
 		'''
-		label_list,output_data = list(),list()
+		label_list, output_data = list(), list()
 		for content in input_data['data']:
 			if content[10] is 2:
 				label_dict = dict()
@@ -46,28 +47,31 @@ class HandleDatabase(DatabaseAccess):
 			content[-2] = datetime.datetime.now()
 			content = tuple(content)
 			output_data.append(content)
-		return label_list,output_data
+		return label_list, output_data
 	
-	def isTables(self, table_name:str) -> dict:
+	def isTables(self, table_name: str) -> dict:
 		u'''判断数据库是否存在table_name
 		:param table_name:数据库表名
 		:return:True/False
 		'''
 		table_list = None
-		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder', remote_bind_address=('0.0.0.0', 3306)) as server:
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder',
+								remote_bind_address=('0.0.0.0', 3306)) as server:
 			try:
-				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd,
+									 database=self.database)
 				cursor = connect.cursor()
 				cursor.execute('show tables')
 				table_lists = [i[0] for i in cursor.fetchall()]
-				table_list = dict({i:False for i in table_lists if str(table_name) not in i}, **{i:True for i in table_lists if str(table_name) in i})
+				table_list = dict({i: False for i in table_lists if str(table_name) not in i},
+								  **{i: True for i in table_lists if str(table_name) in i})
 			except:
 				connect.rollback()
 			finally:
 				connect.close()
 				return table_list
 	
-	def database_tables_name(self, input_data:dict, table_name:str):
+	def database_tables_name(self, input_data: dict, table_name: str):
 		u'''功用：根据criteria匹配数据库中pm3bp2,pp1bs4,pp4bp5,ps2pm6,ps3bs3,ps4，并返回是否匹配上，将criteria做匹配放到对应表
 		名的字典字段中，同时也对数据库中表明做匹配放到数据库对应表名_match字段中
 		:param table_name: 数据库中所需要匹配的表名
@@ -94,16 +98,18 @@ class HandleDatabase(DatabaseAccess):
 		input_data['user_ps4'] = True if ps4_match.findall(input_data['criteria']) else False
 		input_data['user_ps4_match'] = True if ps4_match.findall(table_name) else False
 		return input_data
-
-	def select_data(self, select_sql:str) -> list:
+	
+	def select_data(self, select_sql: str) -> list:
 		u'''通过DataAccess提供的SQL语句进行查询拿到数据
 		:param select_sql: 因为涉及fetchall函数，所以只对select
 		:return: 筛选出的数据的列表
 		'''
 		result = list()
-		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder', remote_bind_address=('0.0.0.0', 3306)) as server:
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder',
+								remote_bind_address=('0.0.0.0', 3306)) as server:
 			try:
-				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd,
+									 database=self.database)
 				cursor = connect.cursor()
 				table_name = select_sql.split("FROM")[1].split("WHERE")[0].strip() if 'WHERE' in select_sql else select_sql.split("FROM")[1].strip()
 				if self.isTables(table_name)[table_name] is True:
@@ -115,31 +121,36 @@ class HandleDatabase(DatabaseAccess):
 				connect.close()
 				return result
 	
-	def select_database_data(self, table_name:str, conditions=None) -> dict:
+	def select_database_data(self, table_name: str, conditions=None) -> dict:
 		u'''连接数据库，做sql操作后SELECT数据，经测试不可直接对SELECT数据操作，遂需分两步进行，并且为保证数据完整性，需要双循环
 		:param table_name: sql表名字
 		:param conditions: 输入条件
 		:return:
 		'''
-		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder', remote_bind_address=('0.0.0.0', 3306)) as server:
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder',
+								remote_bind_address=('0.0.0.0', 3306)) as server:
 			try:
 				results, table_header = list(), list()
-				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd,
+									 database=self.database)
 				cursor = connect.cursor()
-				if isinstance(conditions,list) and isinstance(conditions[0],str):
+				if isinstance(conditions, list) and isinstance(conditions[0], str):
 					for i in conditions:
-						cursor.execute('SELECT * FROM '+table_name+' WHERE variant_id=%s AND is_manual=%s', (str(i),int(2)))
+						cursor.execute('SELECT * FROM ' + table_name + ' WHERE variant_id=%s AND is_manual=%s',
+									   (str(i), int(2)))
 						result = cursor.fetchall()
 						table_header = self.get_header(cursor.description)
 						results.append(list(result[0]))
-				elif isinstance(conditions,list) and isinstance(conditions[0],dict):
+				elif isinstance(conditions, list) and isinstance(conditions[0], dict):
 					for i in conditions:
 						evidences = list()
 						labels = self.database_tables_name(i, table_name=table_name)
-						cursor.execute("SELECT * FROM "+table_name+" WHERE variant_id=%s AND user_id=%s", (str(tuple(i.keys())[0]), int(i.get(tuple(i.keys())[0]))))
+						cursor.execute("SELECT * FROM " + table_name + " WHERE variant_id=%s AND user_id=%s",
+									   (str(tuple(i.keys())[0]), int(i.get(tuple(i.keys())[0]))))
 						result = cursor.fetchall()
 						table_header = self.get_header(cursor.description)
-						if len(result) > 0 and str(result[0][2].decode('utf-8'))==str(tuple(i.keys())[0]) and int(result[0][1]) == int(i.get(tuple(i.keys())[0])):
+						if len(result) > 0 and str(result[0][2].decode('utf-8')) == str(tuple(i.keys())[0]) and int(
+								result[0][1]) == int(i.get(tuple(i.keys())[0])):
 							if labels['user_pm3bp2'] is True and labels['user_pm3bp2_match'] is True:
 								evidences = [i for i in result]
 								results.append(list(evidences))
@@ -159,30 +170,34 @@ class HandleDatabase(DatabaseAccess):
 								evidences = [i for i in result]
 								results.append(list(evidences))
 							else:
-								evidences=[i for i in result]
+								evidences = [i for i in result]
 								results.append(list(evidences))
 			except:
 				connect.rollback()
 			finally:
 				connect.close()
-				return {"header":table_header, "data":results}
+				return {"header": table_header, "data": results}
 	
 	@property
 	def select_group_users(self):
 		groupName = 'ClinicalGroup'
 		
-		groupId,group_leader,group_member,informations,user_collect = int(),int(),list(),list(),list()
-		with SSHTunnelForwarder(("192.168.29.37",22), ssh_username='vardecoder', ssh_password='VarDecoder',remote_bind_address=('0.0.0.0',3306)) as server:
+		groupId, group_leader, group_member, informations, user_collect = int(), int(), list(), list(), list()
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder',
+								remote_bind_address=('0.0.0.0', 3306)) as server:
 			try:
-				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd,
+									 database=self.database)
 				cursor = connect.cursor()
 				
-				groupIdSQL = "SELECT * FROM `group` WHERE group_name = "+"'"+groupName+"'"
+				groupIdSQL = "SELECT * FROM `group` WHERE group_name = " + "'" + groupName + "'"
 				cursor.execute(groupIdSQL)
 				group_data = cursor.fetchall()
 				groupId = group_data[0][0]
 				
-				cursor.execute("SELECT * FROM user_collect WHERE user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={}".format(int(14),int(19),int(21),int(22),int(29),int(30)))
+				cursor.execute(
+					"SELECT * FROM user_collect WHERE user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={}".format(
+						int(14), int(19), int(21), int(22), int(29), int(30)))
 				user_collect = cursor.fetchall()
 				
 				cursor.execute("SELECT * FROM group_user WHERE group_id={}".format(int(groupId)))
@@ -193,45 +208,52 @@ class HandleDatabase(DatabaseAccess):
 					user_name = cursor.fetchall()
 					information['groupId'] = i[0]
 					information['userId'] = i[1]
-					information['name'] = str(user_name[0][2].decode('utf-8')).upper() + " " + str(user_name[0][1].decode('utf-8')).upper()
+					information['name'] = str(user_name[0][2].decode('utf-8')).upper() + " " + str(
+						user_name[0][1].decode('utf-8')).upper()
 					informations.append(information)
 			except:
 				connect.rollback()
 			finally:
 				connect.close()
-				return informations,user_collect
-			
+				return informations, user_collect
+	
 	def user_collect_index(self, result):
-		#TODO:2020年10月19日新需求，统计处致病性强度在ClinicalGroup里各个总数
-		user_collect_list, list1, list2 = list(),list(),list()
+		# TODO:2020年10月19日新需求，统计处致病性强度在ClinicalGroup里各个总数
+		user_collect_list, list1, list2 = list(), list(), list()
 		user_collect_counter = dict(Counter([i[2] for i in result]))
-		user_collect1 = {i:user_collect_counter[i] for i in user_collect_counter if user_collect_counter[i] == 1}
-		user_collect_morethan1 = {i:user_collect_counter[i] for i in user_collect_counter if user_collect_counter[i] > 1}
-		print('only 1: '+str(len(user_collect1)),' more than 1:'+str(len(user_collect_morethan1)))
+		user_collect1 = {i: user_collect_counter[i] for i in user_collect_counter if user_collect_counter[i] == 1}
+		user_collect_morethan1 = {i: user_collect_counter[i] for i in user_collect_counter if
+								  user_collect_counter[i] > 1}
+		print('only 1: ' + str(len(user_collect1)), ' more than 1:' + str(len(user_collect_morethan1)))
 		for variantId in user_collect_morethan1:
-			list1.append([i for i in result if i[2] == variantId and str(i[-2]) == max([str(i[-2]) for i in result if i[2] == variantId])][0])
+			list1.append([i for i in result if
+						  i[2] == variantId and str(i[-2]) == max([str(i[-2]) for i in result if i[2] == variantId])][
+							 0])
 		for variant in user_collect1:
 			list2.append([i for i in result if i[2] == variant][0])
 		user_collect_list = list1 + list2
 		user_collect_interpretation = [i[7] for i in user_collect_list]
 		print(dict(Counter(user_collect_interpretation)))
-		
-	def insert_to_tables(self, table_name:str, data:dict):
+	
+	def insert_to_tables(self, table_name: str, data: dict):
 		# TODO:亮点是对需要单个写入的数据，进行批量写入
 		u'''插入数据，在对拿到数据做处理后
 		:param table_name: 数据库中表名
 		:param data: 字典型数据
 		:return: 无返回，需要try/except/finally关闭数据库否则会一直运行
 		'''
-		with SSHTunnelForwarder(("192.168.29.37",22), ssh_username='vardecoder', ssh_password='VarDecoder',remote_bind_address=('0.0.0.0',3306)) as server:
+		with SSHTunnelForwarder(("192.168.29.37", 22), ssh_username='vardecoder', ssh_password='VarDecoder',
+								remote_bind_address=('0.0.0.0', 3306)) as server:
 			try:
-				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd, database=self.database)
+				connect = mc.connect(host="127.0.0.1", port=server.local_bind_port, user=self.user, passwd=self.passwd,
+									 database=self.database)
 				cursor = connect.cursor()
 				table_header = ",".join(data['header'])
 				for contents in data['data']:
 					for content in contents:
-						sql = "INSERT INTO " + table_name+ "(" + table_header + ") VALUES ("+str("%s,"*len(data['header'])).strip(",")+")"
-						cursor.execute(sql, tuple([content[i] for i in range(0,len(data['header']))]))
+						sql = "INSERT INTO " + table_name + "(" + table_header + ") VALUES (" + str(
+							"%s," * len(data['header'])).strip(",") + ")"
+						cursor.execute(sql, tuple([content[i] for i in range(0, len(data['header']))]))
 						connect.commit()
 				print("The database was commited.")
 			except:
@@ -257,9 +279,9 @@ class HandleDatabase(DatabaseAccess):
 	# 		finally:
 	# 			connect.close()
 	# 			return results
-		
+	
 	def main(self):
-		#TODO:新增新函数需重写
+		# TODO:新增新函数需重写
 		u'''主程序入口
 		:return:
 		'''
@@ -283,32 +305,30 @@ class HandleDatabase(DatabaseAccess):
 		# variant_list = [content[2] for content in user_collect]
 		# mix_compare = [content[3] + "|" + content[2] for content in user_collect]
 		# gene_variant = [{gene: ",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)]),"SUM": len([str(i).split("|")[1] for i in mix_compare if re.search(gene, i, re.I)])} for gene in gene_list_counter]
-
+		
 		u'''
 		将user_collect的基因按照submitter统计出总数与variantId
 		'''
-		# for i in informations:
-		# 	gene_list = [content[3] for content in user_collect if int(i['userId']) == int(content[1])]
-		# 	gene_list_dict = dict(Counter(gene_list))
-		# 	variant_list =[content[2] for content in user_collect if int(i['userId']) == int(content[1])]
-		# 	mix_compare = [content[3]+"|"+content[2] for content in user_collect if int(i['userId']) == int(content[1])]
-		# 	gene_variant = [{gene:",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)]),"SUM":len([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)])} for gene in gene_list_dict]
-		# 	information[i['name']] = gene_variant
-			
-		# with open("test.tsv","w+") as file:
-		# 	# 输出文件
-		# 	file.write("Gene"+"\t"+"Sum"+"\n")
-		# 	for variant in gene_variant:
-		# 		file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
-		
-		#2020年10月19日
+	# for i in informations:
+	# 	gene_list = [content[3] for content in user_collect if int(i['userId']) == int(content[1])]
+	# 	gene_list_dict = dict(Counter(gene_list))
+	# 	variant_list =[content[2] for content in user_collect if int(i['userId']) == int(content[1])]
+	# 	mix_compare = [content[3]+"|"+content[2] for content in user_collect if int(i['userId']) == int(content[1])]
+	# 	gene_variant = [{gene:",".join([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)]),"SUM":len([str(i).split("|")[1] for i in mix_compare if re.search(gene,i,re.I)])} for gene in gene_list_dict]
+	# 	information[i['name']] = gene_variant
+	
+	# with open("test.tsv","w+") as file:
+	# 	# 输出文件
+	# 	file.write("Gene"+"\t"+"Sum"+"\n")
+	# 	for variant in gene_variant:
+	# 		file.write(str(list(variant.keys())[0])+"\t"+str(variant[list(variant.keys())[1]])+"\t"+"\n")
+
+		# # 2020年10月19日
 		# user_collect_sql = self.to_select("*","user_collect","user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={} OR user_id={}".format(int(14),int(19),int(21),int(22),int(29),int(30)))
 		# user_collect = self.select_user_collect(user_collect_sql)
 		# self.user_collect_index(user_collect)
-		
-			
+
 
 if __name__ == '__main__':
-	test = HandleDatabase(host='192.168.29.37',user='vardecoder',passwd='Decoder#123',database='varDecoding')
+	test = HandleDatabase(host='192.168.29.37', user='vardecoder', passwd='Decoder#123', database='varDecoding')
 	test.main()
-	

@@ -2,7 +2,9 @@
 #@Time : 2020/9/28 0028 17:57
 #@Author: Joword
 #@File : tool.py
+# @update: 2020年10月22日
 
+from WriterExcel import *
 from collections import Counter
 
 class tools(object):
@@ -32,9 +34,9 @@ class tools(object):
 	
 	def count_number(self, count_list:list, margin=1) -> tuple:
 		u'''
-		:param count_list:输入序列
+		:param count_list: 输入序列
 		:param margin: 由Counter统计出来的出现次数
-		:return: 默认返回margin=1的结果，也可以修改
+		:return: 默认返回margin = 1的结果，也可以修改
 		'''
 		counter = Counter(count_list)
 		file1 = file2 = []
@@ -44,3 +46,5 @@ class tools(object):
 			else:
 				file2.append(key)
 		return file1,file2
+	
+	

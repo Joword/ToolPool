@@ -6,18 +6,19 @@
 import os
 import openpyxl as ol
 from collections import Counter
+from WriterExcel import *
 
 class UpdateUserEvidence(object):
     u'''
-    2020年8月10日，lisa需求：将海燕、娜娜、lisa、方芳、陈晓玲、嘉乐的数据提供给怀瑾，估计是更新耳聋127Panel，鉴于之前
+    2020年8月10日，lisa需求：将海燕小姐姐、娜娜、lisa、方芳、陈晓玲、嘉乐的数据提供给怀瑾，估计是更新耳聋127Panel，鉴于之前
     就已经有过一次需要数据库数据然后提供给换进的经验，估计往后可能依旧会有，遂写成一个类，方便以后复用，
-    逻辑：1、处理重复数据
+    逻辑：
+    1、处理重复数据
     2、将数据转为字典以方便数据处理
     3、excel输出
     4、主函数逻辑
     时至23：03分完成，虽耗时一天，但收获颇丰，毕。
     '''
-
     def __init__(self,fileName=None):
         self.file = fileName
 
@@ -106,8 +107,6 @@ class UpdateUserEvidence(object):
             variant_list.sort()
             self.write_excel(variant_list,"result.xlsx")
 
-
-
-if __name__ == '__main__':
-    test = UpdateUserEvidence("data.txt")
-    test.main()
+# if __name__ == '__main__':
+#     test = UpdateUserEvidence("data.txt")
+#     test.main()
