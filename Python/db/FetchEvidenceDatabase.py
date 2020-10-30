@@ -160,22 +160,22 @@ class FetchEvidenceDatabase(object):
         PS3BS3 = ['id','user_id','variant_id','acmg_name','publication_type','publication','strength','experiment','function_change','evidence_sentence','figure','comment','status','create_time','update_time']
         PS4 = ['id','user_id','variant_id','acmg_name','publication_type','publication','strength','inheritance','phenotype','ancestry','allele_in_patient','total_allele_in_patient','allele_in_control','total_allele_in_control','odds_ratio_user','odd_ratio','odds_ratio_lower','odds_ratio_upper','proband_num','p_value','evidence_sentence','comment','status','create_time','update_time']
         
-        if table_name is 'user_pm3bp2':
+        if table_name == 'user_pm3bp2':
             for pm3bp2s in range(len(PM3BP2)):
                 wa[self.words[pm3bp2s]+"1"] = PM3BP2[pm3bp2s]
-        elif table_name is 'user_pp1bs4':
+        elif table_name == 'user_pp1bs4':
             for pp1bs4s in range(len(PP1BS4)):
                 wa[self.words[pp1bs4s]+'1'] = PP1BS4[pp1bs4s]
-        elif table_name is 'user_pp4bp5':
+        elif table_name == 'user_pp4bp5':
             for pp4bp5s in range(len(PP4BP5)):
                 wa[self.words[pp4bp5s]+"1"] = PP4BP5[pp4bp5s]
-        elif table_name is 'user_ps2pm6':
+        elif table_name == 'user_ps2pm6':
             for ps2pm6s in range(len(PS2PM6)):
                 wa[self.words[ps2pm6s]+"1"] = PS2PM6[ps2pm6s]
-        elif table_name is 'user_ps3bs3':
+        elif table_name == 'user_ps3bs3':
             for ps3bs3s in range(len(PS3BS3)):
                 wa[self.words[ps3bs3s]+"1"] = PS3BS3[ps3bs3s]
-        elif table_name is 'user_ps4':
+        elif table_name == 'user_ps4':
             for ps4s in range(len(PS4)):
                 wa[self.words[ps4s]+"1"] = PS4[ps4s]
         
