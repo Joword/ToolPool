@@ -2,7 +2,6 @@ openpyxl
 autopep8==1.5.4
 bcrypt==3.2.0
 cffi==1.14.3
-cryptography==3.1.1
 mysql==0.0.2
 mysql-connector==2.2.9
 mysqlclient==2.0.1
