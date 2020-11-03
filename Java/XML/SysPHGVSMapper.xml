@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.bgi.interpretation.modules.sys.mapper.SysPHGVSMapper">
+	<select id="getSysPHGVSByGenepHGVS" resultType="com.bgi.interpretation.modules.sys.po.SysSearchTest">
+        select * from sys_master where gene=#{gene} and (index_p=#{phgvs} or index_p1 = #{phgvs})
+    </select>
+    <select id="getTranscriptpHGVSList" resultType="com.bgi.interpretation.modules.sys.po.SysSearchTest">
+        select * from sys_master where trancript_p=#{transcriptp} and (index_p=#{phgvs} or index_p1 = #{phgvs})
+    </select>
+</mapper>
