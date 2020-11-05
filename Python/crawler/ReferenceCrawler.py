@@ -3,27 +3,24 @@
 # @Author: Joword
 # @File : ReferenceCrawler.py
 
+import re
 import sys
+import json
 import random
+import logging
 import requests
 import mysql.connector as mc
 from pyquery import PyQuery as pq
 from sshtunnel import SSHTunnelForwarder
 
-if sys.version_info[0] > 2:
-	from urllib.parse import quote_plus, urlparse, parse_qs
-else:
-	from urllib import quote_plus
-	from urlparse import urlparse, parse_qs
-
 u'''
 鉴于耳聋自动化解读报告需要出具PMID对应的参考文献格式，实现思路如下：
 **同时考虑怀瑾需要随时使用此程序进行参考文献导出
 1、连接数据库，获取参考文献的PMID
-2、将这些PMID做成参数导入，https://pubmed.ncbi.nlm.nih.gov/+PMID,中作抓取CITE结果
-3、再将CITE结果存入172服务器中即可
+2、将这些PMID做成参数导入，https://pubmed.ncbi.nlm.nih.gov/+PMID/citations,
+*注意到数据库中存在NBK格式PMID，遂https://www.ncbi.nlm.nih.gov/books/+NBKPMID/，中作抓取CITE结果
+3、再将CITE结果存入172服务器中即可,后续再布置
 '''
-
 
 class ReferenceFormatCrawler(object):
 	
@@ -82,11 +79,10 @@ class ReferenceFormatCrawler(object):
 		with open("google_user_agents.txt", "r") as f:
 			return [i.strip().split("\n")[0] for i in f.readlines()]
 	
-	def to_select(self, table_name: str, conditions=None) -> str:
+	def to_select(self, table_name: str) -> str:
 		u'''
 		:param table_name: 数据库表名
-		:param conditions: 筛选数据的条件
-		:return:可能会有合并的情况和union搜索的存在，可能需要rewrite
+		:return: SQL
 		'''
 		return "SELECT * FROM {}".format(str(table_name))
 	
@@ -111,7 +107,7 @@ class ReferenceFormatCrawler(object):
 				return result
 	
 	def get_pmid(self, old_pmid: list, new_pmid: list) -> list:
-		u'''共计292762篇，
+		u'''共计292762篇，统计自2020年11月4日
 		:param old_pmid:旧的pmids list
 		:param new_pmid: 新的pmids list
 		:return: 去重后的pmids list
@@ -125,23 +121,53 @@ class ReferenceFormatCrawler(object):
 		new_list = [i[1] for i in new_pmid]
 		return list(set(pmid_list + new_list))
 	
-	def get_pubmed_pmid(self, pmids):
-		# query = ['https://pubmed.ncbi.nlm.nih.gov/'+str(i)+'/' for i in pmids]
-		query = 'https://pubmed.ncbi.nlm.nih.gov/22520757/'
-		domain = self.__DOMAIN_GOOGLE
-		url = query
-		headers = {'User-gent': random.choice(self.user_agent)}
-		requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
-		request_result = requests.get(url=url, headers=headers, timeout=60)
-		pq_content = self.pq_html(request_result.text)
-		# TODO:print(pq_content('div:contains("22520757")').text())
+	def get_pubmed_pmid(self, pmids:list)->list:
+		u'''main function
+		Parameters
+		----------
+		pmids pmid list
+		e.g query = 'https://pubmed.ncbi.nlm.nih.gov/22520757/citations/'
+		query_NBK ='https://www.ncbi.nlm.nih.gov/books/NBK368474/'
+		
+		Returns [{pmid:references},{},...]
+		-------
 
+		'''
+		result=[]
+		pmid_all_number = ['https://pubmed.ncbi.nlm.nih.gov/'+str(i)+'/citations/' for i in pmids if re.match('\d+',i,re.I)]
+		pmid_NBK = ['https://www.ncbi.nlm.nih.gov/books/'+str(i) for i in pmids if re.match('NBK\d+',i,re.I)]
+		pmid_full = pmid_all_number+pmid_NBK
+		headers = {'User-Agent': random.choice(self.user_agent)}
+		for pmid in pmid_full:
+			try:
+				if re.match('NBK',str(pmid).split("/")[-1],re.I):
+					requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+					request_result = requests.get(url=pmid, headers=headers, timeout=150)
+					pq_text = self.pq_html(request_result.text.encode('utf-8'))
+					result.append({str(pmid).split("/")[-1]:pq_text('.bk_tt').text()})
+				else:
+					request_result = requests.get(url=pmid, headers=headers, timeout=150)
+					pq_text = self.pq_html(request_result.text)
+					citation_dict = json.loads(pq_text('p').text())
+					citation_index = str(citation_dict['id']).split("pmid:")[1]
+					citation_orig = str(citation_dict['nlm']['orig']).split(". PMID:")[0]+'.'
+					citation_format = str(citation_dict['nlm']['format']).split(". PMID:")[0]+'.'
+					result.append({citation_index:"|".join([citation_orig,citation_format])})
+					logging.info(pmid+'has the citation.')
+			except:
+				logging.info(pmid+'has not the citation.')
+				
+		return result
+		
 
-if __name__ == '__main__':
-	test = ReferenceFormatCrawler(host="192.168.29.37", user="vardecoder", passwd="Decoder#123", database="varDecoding")
-	old_sql = test.to_select("variant_literature")
-	new_sql = test.to_select("new_literature_information_temp")
-	old_pmid = test.select_tables_data(old_sql)
-	new_pmid = test.select_tables_data(new_sql)
-	pmids = test.get_pmid(old_pmid, new_pmid)
-	test.get_pubmed_pmid(pmids)
+# if __name__ == '__main__':
+# 	logging.basicConfig(filename='reference_crawler.log', filemode='a',
+# 						format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
+# 						datefmt='%Y-%m-%d %H:%M:%S')
+# 	test = ReferenceFormatCrawler(host="192.168.29.37", user="vardecoder", passwd="Decoder#123", database="varDecoding")
+# 	old_sql = test.to_select("variant_literature")
+# 	new_sql = test.to_select("new_literature_information_temp")
+# 	old_pmid = test.select_tables_data(old_sql)
+# 	new_pmid = test.select_tables_data(new_sql)
+# 	pmids = test.get_pmid(old_pmid, new_pmid)
+# 	pmid_dict = test.get_pubmed_pmid(pmids)
