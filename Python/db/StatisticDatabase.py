@@ -130,13 +130,14 @@ class StatisticDatabase(object):
 				connect.close()
 				return result
 
-if __name__ == '__main__':
-	test = StatisticDatabase(host="192.168.29.37",user="vardecoder",passwd="Decoder#123",database="varDecoding")
-	sql_user = test.to_select('user_collect')
-	sql_sysmaster = test.to_select('sys_master')
-	user_collect = test.select_tables_data(sql_user)
-	sys_master = test.select_tables_data(sql_sysmaster)
-	variantId = list(set([i[2] for i in user_collect] + [i[0] for i in sys_master]))
-	gene = list(set([i[3] for i in user_collect] + [i[1] for i in sys_master]))
-	print(len(variantId),len(gene))
+
+# if __name__ == '__main__':
+# 	test = StatisticDatabase(host="192.168.29.37",user="vardecoder",passwd="Decoder#123",database="varDecoding")
+# 	sql_user = test.to_select('user_collect')
+# 	sql_sysmaster = test.to_select('sys_master')
+# 	user_collect = test.select_tables_data(sql_user)
+# 	sys_master = test.select_tables_data(sql_sysmaster)
+# 	variantId = list(set([i[2] for i in user_collect] + [i[0] for i in sys_master]))
+# 	gene = list(set([i[3] for i in user_collect] + [i[1] for i in sys_master]))
+# 	print(len(variantId),len(gene))
 	

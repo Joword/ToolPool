@@ -14,6 +14,11 @@ Besides, it has been sshtunel to connect your database at all.<br>
 **The structured query language from DatabaseAccess can be used by HandleDatabase function.**
 Anyway, I want to enrich database connection in future.<br>
 **The HandleDatabase was a tool of handle the database by SSH connecting**<br>
+**The StatisticDatabase was a statistic of database.**<br>
+
+crawler
+>a sort of web crawler.<br>
+**The ReferenceCrawler was a tool of web crawler by pyquery.**<br>
 
 sort
 >the alogrithm of analysis
